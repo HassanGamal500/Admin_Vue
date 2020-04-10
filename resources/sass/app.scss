@@ -2,10 +2,16 @@
 @import url('https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700');
 
 // Variables
-// @import 'variables';
+@import 'variables';
 
 // Bootstrap
 // @import '~bootstrap/scss/bootstrap';
 
 @import '../../public/admin-lte/plugins/fontawesome-free/css/all.min.css';
 @import '../../public/admin-lte/dist/css/adminlte.css';
+
+
+.router-link-exact-active {
+    background-color: #3f51b5;
+    color: #fff;
+}

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\User;
 use Illuminate\Support\Facades\Hash;
+Use Image;
 
 class UserController extends Controller
 {
@@ -16,7 +17,7 @@ class UserController extends Controller
      */
     public function __construct()
     {
-        $this->middleware('api');
+        $this->middleware('auth:api');
     }
 
     /**
@@ -50,6 +51,53 @@ class UserController extends Controller
             'email' => $request->email,
             'password' => Hash::make($request->password)
         ]);
+    }
+
+    public function profile()
+    {
+        return auth('api')->user();
+    }
+
+    public function updateProfile(Request $request) 
+    {
+        $user = auth('api')->user();
+
+        $this->validate($request, [
+            'name' => 'required|string|max:80',
+            'email' => 'required|email|string|max:200|unique:users,email,'.$user->id,
+            'password' => 'sometimes|min:6',
+            'photo' => 'required'
+        ]);
+
+        $curentPhoto = $user->photo;
+        
+        if($request->photo != $curentPhoto){
+            $name = time(). '.' .explode('/', explode(':', substr($request->photo, 0, strpos($request->photo, ';')))[1])[1];
+            Image::make($request->photo)->save(public_path('img/profile/').$name);
+            // $request->merge(['photo' => $name]);
+            $user->update(['photo' => $name]);
+            $userPhoto = public_path('img/profile/').$curentPhoto;
+            if(file_exists($userPhoto)){
+                @unlink($userPhoto);
+            }
+        }
+
+        // dd($name);
+
+        if($request->password){
+            $user->update([
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+            ]);
+        } else {
+            $user->update([
+                'name' => $request->name,
+                'email' => $request->email,
+            ]);
+        }
+        // $user->update($request->all());
+        return $user;
     }
 
     /**
@@ -109,5 +157,17 @@ class UserController extends Controller
         $user = User::findOrFail($id);
 
         $user->delete();
+    }
+
+    public function search()
+    {
+        if($search = \Request::get('q')) {
+            $user = User::where(function($query) use ($search){
+                $query->where('name', 'LIKE', "%$search%")->orWhere('email', 'LIKE', "%$search%");
+            })->get();
+        } else {
+            $user = User::all();
+        }
+        return $user;
     }
 }
